@@ -41,7 +41,7 @@ class GameState:
         }
         self.history = []
         self.wealth_history = {i: [30.0] for i in range(1, 6)} 
-        self.host_script = "Welcome to the Syndicate. Read the Dossier. Negotiate your positions. Round 1 begins."
+        self.host_script = "Welcome, Initiates. I am the Supreme Orchestrator. The High Council controls the board; you are just playing on it. Survive our gauntlet. Round 1 begins."
 
 @st.cache_resource
 def get_state(): return GameState()
@@ -56,10 +56,10 @@ def assign_random_roles():
     for i in range(1, 6): state.players[i]["role"] = roles[i-1]
 
 def get_player_title(cash):
-    if cash <= 10.0: return "🐀 Liability"
-    elif cash <= 30.0: return "💼 Associate"
-    elif cash <= 60.0: return "🤝 Senior Partner"
-    else: return "👑 Underboss"
+    if cash <= 10.0: return "🐀 Expendable Pawn"
+    elif cash <= 30.0: return "💼 Syndicate Initiate"
+    elif cash <= 60.0: return "🔫 Elite Operative"
+    else: return "🩸 The Chosen Asset"
 
 def render_wealth_chart():
     chart_data = pd.DataFrame(state.wealth_history)
@@ -149,14 +149,14 @@ def leaderboard_view(player_id=None):
     if player_id is not None:
         if player_id in winners:
             if state.players[player_id]['role'] == "Mastermind":
-                st.error("### 🩸 THE PERFECT CRIME. You played them for fools and burned the city to the ground. The Syndicate is yours.")
+                st.error("### 🩸 THE PERFECT MOLE. You executed the Council's secret orders flawlessly and ruined your peers. Welcome to the Syndicate.")
                 st.balloons()
             else:
-                st.success("### 👑 YOU ARE CHOSEN. You survived the bloodbath. Step into my office. You are the new Right Hand.")
+                st.success("### 👑 GAUNTLET SURVIVED. You outmaneuvered the others and impressed the High Council. You are our newest Elite Asset.")
                 st.snow()
         else:
             winner_names = " and ".join([state.players[w]['name'] for w in winners])
-            st.warning(f"### ❌ YOU FAILED. You lacked the killer instinct. The streets belong to {winner_names} now. Kiss the ring or pack your bags.")
+            st.warning(f"### ❌ LIQUIDATED. You failed to impress the Orchestrator. {winner_names} got the contract. Clean out your locker and disappear.")
 
     st.title("🚨 THE DUST SETTLES: ENDGAME RESULTS 🚨")
     st.divider()
@@ -186,7 +186,7 @@ def host_view():
     col1, col2 = st.columns([2, 1])
     with col1: 
         st.header(f"Current Round: {state.round} / {state.max_rounds}")
-        st.progress(ready_count / 5.0, text=f"Associates Ready: {ready_count} / 5")
+        st.progress(ready_count / 5.0, text=f"Initiates Ready: {ready_count} / 5")
     with col2: 
         if st.button("🔄 Force Global Sync", use_container_width=True): st.rerun()
 
@@ -208,7 +208,7 @@ def host_view():
         target = st.selectbox("Select Player", range(1, 6), format_func=lambda x: state.players[x]["name"])
         msg = st.text_area("Message to Player")
         if st.button("Send as Host"):
-            state.players[target]["inbox"].append(f"👑 FROM HOST: {msg}")
+            state.players[target]["inbox"].append(f"👑 FROM ORCHESTRATOR: {msg}")
             state.players[target]["unread"] += 1
             st.success("Message Sent!")
 
@@ -265,7 +265,7 @@ def player_view(player_id):
     st.markdown(f"## 👤 {pdata['name']} | Status: {get_player_title(pdata['cash'])}")
     
     if pdata.get("bankrupt_warning"):
-        st.error("🩸 **BANKRUPTCY AVERTED:** You lost everything. The Syndicate has fronted you ₹10 Lakhs to stay in the game. Do not embarrass us again.")
+        st.error("🩸 **COFFERS EMPTY:** You lost everything. The High Council is fronting you ₹10 Lakhs because we aren't done playing with you yet.")
         state.players[player_id]["bankrupt_warning"] = False
 
     c1, c2, c3 = st.columns(3)
@@ -283,9 +283,9 @@ def player_view(player_id):
 
     with tab_action:
         if pdata["invest_choice"] and pdata["sabotage_choice"]:
-            st.success("✅ Protocol locked. Awaiting Syndicate resolution.")
+            st.success("✅ Protocol locked. Awaiting Council resolution.")
         else:
-            if pdata["role"] == "Mastermind": st.write("### 🩸 Select your targets, Boss. The bank is ready to wire your failure bonuses.")
+            if pdata["role"] == "Mastermind": st.write("### 🩸 Select your targets, Mole. The Council is ready to wire your failure bonuses.")
             elif pdata["role"] == "Detective": st.write("### 🕵️‍♂️ Lock in your moves. Wiretaps are active for post-round sabotage data.")
             else: st.write("### 💼 Lock in your market positions.")
             
@@ -341,17 +341,17 @@ def player_view(player_id):
 
     with tab_dossier:
         st.markdown("""
-        ### 📜 Letter from the Don
-        I am giving you 8 rounds to prove your worth. Silence is death; you must negotiate, build trust, and deceive to survive.
+        ### 📜 The Council's Gauntlet
+        I am the Supreme Orchestrator. My four partners and I—the High Council—have built this financial empire. Now, we need a new operative to do our dirty work, so we have pulled five of you from the crowd to run our simulator. The Council is watching. The candidate with the highest net worth at the end of Round 8 wins a lucrative contract with our Syndicate. The rest of you are liquidated.
         
-        * **The Goal:** End the game with the highest net worth. Only one player walks away as the winner.
-        * **The Income:** You passively receive ₹10 Lakhs at the end of every round just for surviving.
-        * **The Investment:** You may invest ₹10 Lakhs into Vault A, B, or C. If the heist succeeds, the total pool is multiplied (1.5x, 2.0x, or 2.5x) and split evenly among the investors. If it fails, you lose your investment. You can also choose to 'Hold Cash' to keep your money completely safe.
-        * **The Sabotage:** You can secretly plant explosives on any vault for free. Each sabotage drops that vault's success rate by 25% (from a starting base of 90%).
-        * **Hidden Roles:** You all have a secret identity. Most of you are 'Associates' trying to make money. However, one of you is the **Mastermind**, who receives a secret ₹10 Lakhs bonus for *every* vault that fails. Another is the **Detective**, who receives a secret message each round revealing exactly how many total sabotages were planted.
-        * **Secure Comms:** Use your encrypted messaging to form private cartels, extort rivals, or coordinate attacks. Each message costs ₹1.0 Lakh.
+        * **The Goal:** End the game with the most money to impress the High Council.
+        * **The Salary:** You passively receive ₹10 Lakhs at the end of every round just for surviving.
+        * **The Investment:** You may invest ₹10 Lakhs into Vault A, B, or C. If the heist succeeds, the pool is multiplied (1.5x, 2.0x, or 2.5x) and split among the investors. 
+        * **Corporate Sabotage:** You can secretly plant explosives on a vault for free, dropping its success rate by 25%.
+        * **Hidden Roles:** The Council has secretly hired one of you as the **Mastermind** (our inside mole) who gets a ₹10 Lakhs bonus from us every time a vault fails. Another is the **Detective**, who receives our private server logs showing exactly how many sabotages occurred.
+        * **Secure Comms:** Use your encrypted messaging to form cartels or extort your peers. Each message costs ₹1.0 Lakh.
         
-        Trust no one. Form a cartel. Make me rich.
+        Entertain us. Prove you are ruthless enough to work for the Council.
         """)
 
 # ==========================================
